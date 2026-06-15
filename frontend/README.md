@@ -10,3 +10,7 @@ Features:
 - DMARC syntax checks
 - External report authorization guidance
 - Existing record parser
+
+# HTML Upgrade
+
+- Added button "Copy Azure DNS Bicep"

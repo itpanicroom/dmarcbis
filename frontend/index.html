@@ -1,0 +1,1106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DMARCbis Record Builder</title>
+  <style>
+    :root {
+      --bg: #f3efe7;
+      --panel: #fffdf8;
+      --ink: #1f2430;
+      --muted: #5f6675;
+      --accent: #0a6b5a;
+      --accent-2: #d16a00;
+      --bad: #b42318;
+      --good: #0a6b5a;
+      --border: #d6cfbf;
+      --shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(209,106,0,0.15), transparent 32%),
+        radial-gradient(circle at 100% 90%, rgba(10,107,90,0.13), transparent 26%),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1050px;
+      margin: 2rem auto;
+      padding: 1rem;
+    }
+
+    .hero {
+      background: linear-gradient(120deg, #173649, #24596a 65%, #2f746d);
+      color: #f8fafb;
+      border-radius: 16px;
+      padding: 1.2rem 1.4rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1rem;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -40px;
+      top: -70px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      transform: rotate(18deg);
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(1.2rem, 2.6vw, 1.9rem);
+      letter-spacing: 0.2px;
+    }
+
+    .hero p {
+      margin: 0.45rem 0 0;
+      max-width: 780px;
+      color: #deeaed;
+      line-height: 1.45;
+      position: relative;
+      z-index: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 980px) {
+      .grid {
+        grid-template-columns: 1.15fr 1fr;
+      }
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 1rem;
+    }
+
+    h2 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.94rem;
+      margin-top: 0;
+      line-height: 1.35;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.75rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid #c8bfae;
+      background: #fff;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 0.55rem 0.65rem;
+      font: inherit;
+    }
+
+    textarea { min-height: 72px; resize: vertical; }
+
+    .hint {
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .label-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .tip {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      border: 1px solid #bfae8d;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #5f4b2b;
+      background: #f6ecd9;
+      cursor: help;
+      user-select: none;
+    }
+
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 0.3rem;
+    }
+
+    .checks label {
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #f8f3e8;
+      border: 1px solid #eadfc9;
+      padding: 0.3rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.84rem;
+    }
+
+    .out {
+      background: #0f1722;
+      color: #f8fbff;
+      border-radius: 10px;
+      padding: 0.8rem;
+      overflow-x: auto;
+      font-family: "IBM Plex Mono", Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin: 0;
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.7rem;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      padding: 0.5rem 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 140ms ease, filter 140ms ease;
+    }
+
+    button.alt {
+      background: #1f334a;
+    }
+
+    button.warn {
+      background: var(--accent-2);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+    }
+
+    .issues {
+      margin: 0;
+      padding-left: 1.05rem;
+      line-height: 1.45;
+    }
+
+    .issues li { margin-bottom: 0.25rem; }
+    .issues .err { color: var(--bad); }
+    .issues .warn { color: #8b4a00; }
+    .issues .ok { color: var(--good); }
+
+    .chip {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.2px;
+      margin-bottom: 0.5rem;
+    }
+
+    .chip.good { background: #d6f2ea; color: #06483b; }
+    .chip.bad { background: #fde8e6; color: #8b1d13; }
+
+    .split {
+      display: grid;
+      gap: 0.75rem;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 680px) {
+      .split { grid-template-columns: 1fr 1fr; }
+    }
+
+    .foot {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .wizard {
+      border: 1px dashed #ccbda0;
+      background: #fff7ea;
+      border-radius: 12px;
+      padding: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    .wizard-stage {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+      margin-top: 0.4rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .wizard-stage button {
+      background: #2f4f6f;
+      font-size: 0.84rem;
+      padding: 0.45rem 0.65rem;
+    }
+
+    .wizard-stage button.active {
+      background: #0a6b5a;
+    }
+
+    .wizard-box {
+      border: 1px solid #e9dbc0;
+      border-radius: 10px;
+      padding: 0.65rem;
+      background: #fffdf7;
+    }
+
+    .wizard-box h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.98rem;
+    }
+
+    .checkpoint-list {
+      margin: 0;
+      padding-left: 1.05rem;
+      line-height: 1.4;
+      font-size: 0.9rem;
+    }
+
+    .checkpoint-list li { margin-bottom: 0.24rem; }
+    .checkpoint-list .pass { color: var(--good); }
+    .checkpoint-list .todo { color: #915100; }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 0.55rem;
+      border: 1px solid #ddcfb3;
+      border-radius: 10px;
+      background: #fff7e8;
+      font-size: 0.9rem;
+    }
+
+    .switch input {
+      width: auto;
+      margin: 0;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .path-list {
+      margin: 0;
+      padding-left: 1.05rem;
+      line-height: 1.45;
+      font-size: 0.9rem;
+    }
+
+    .path-list li { margin-bottom: 0.26rem; }
+    .path-list .done { color: var(--good); }
+    .path-list .next { color: #915100; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>DMARCbis Interactive Builder</h1>
+      <p>Create DMARC policy records aligned with RFC 9989 plus reporting guidance from RFC 9990 and RFC 9991. Includes guided rollout, policy checks, and legacy RFC 7489 compatibility mode.</p>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Record Inputs</h2>
+        <p class="muted">Built for RFC 9989. Active tags are emitted; historic tags are only surfaced when parsing legacy records.</p>
+
+        <div class="row" style="margin-top:0;">
+          <label class="switch" for="compat7489">
+            <input id="compat7489" type="checkbox" />
+            RFC 7489 compatibility mode (legacy)
+          </label>
+        </div>
+        <p id="modeSummary" class="hint">Standards mode: RFC 9989 active tags (t, psd, np) with RFC 9990/9991 report guidance.</p>
+
+        <div class="form-grid">
+          <div class="field full">
+            <label for="domain"><span class="label-row">Domain <span class="tip" title="Author Domain (RFC5322.From). DMARC policy is published at _dmarc.&lt;domain&gt;.">?</span></span></label>
+            <input id="domain" type="text" placeholder="example.com" autocomplete="off" />
+            <div class="hint">Record host will be built as _dmarc.&lt;domain&gt;</div>
+          </div>
+
+          <div class="field">
+            <label for="p"><span class="label-row">p (policy) <span class="tip" title="Domain Owner Assessment Policy. RFC 9989 marks p as RECOMMENDED; if absent in a valid record with usable rua, receivers treat it as p=none.">?</span></span></label>
+            <select id="p">
+              <option value="none">none</option>
+              <option value="quarantine">quarantine</option>
+              <option value="reject">reject</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="sp"><span class="label-row">sp (subdomain policy) <span class="tip" title="Policy for existing subdomains of the Organizational Domain. If absent, policy falls back to p.">?</span></span></label>
+            <select id="sp">
+              <option value="">inherit p</option>
+              <option value="none">none</option>
+              <option value="quarantine">quarantine</option>
+              <option value="reject">reject</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="np"><span class="label-row">np (non-existent subdomain policy) <span class="tip" title="Policy for non-existent subdomains (NXDOMAIN). If absent, receivers use sp if present, otherwise p.">?</span></span></label>
+            <select id="np">
+              <option value="">not set</option>
+              <option value="none">none</option>
+              <option value="quarantine">quarantine</option>
+              <option value="reject">reject</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="t"><span class="label-row">t (test mode) <span class="tip" title="RFC 9989 active replacement for pct testing behavior. t=y requests test-mode handling by receivers/intermediaries; t=n is default.">?</span></span></label>
+            <select id="t">
+              <option value="">default (n)</option>
+              <option value="n">n</option>
+              <option value="y">y</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="adkim"><span class="label-row">adkim (DKIM alignment) <span class="tip" title="r=relaxed (same Organizational Domain), s=strict (identical domain). Default is r.">?</span></span></label>
+            <select id="adkim">
+              <option value="">default (r)</option>
+              <option value="r">r</option>
+              <option value="s">s</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="aspf"><span class="label-row">aspf (SPF alignment) <span class="tip" title="r=relaxed, s=strict. Default is r. DMARC uses SPF MAIL FROM identity alignment.">?</span></span></label>
+            <select id="aspf">
+              <option value="">default (r)</option>
+              <option value="r">r</option>
+              <option value="s">s</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="psd"><span class="label-row">psd flag <span class="tip" title="Set when publishing policy for a Public Suffix Domain: y for PSD, n for explicit non-PSD Organizational Domain marker, u default unknown.">?</span></span></label>
+            <select id="psd">
+              <option value="">default (u)</option>
+              <option value="u">u</option>
+              <option value="n">n</option>
+              <option value="y">y</option>
+            </select>
+          </div>
+
+          <div class="field full">
+            <label for="rua"><span class="label-row">rua (aggregate report URIs) <span class="tip" title="Comma-separated URI list. Any URI syntax is allowed by spec; receivers MUST support mailto and may ignore unsupported schemes.">?</span></span></label>
+            <textarea id="rua" placeholder="mailto:dmarc@example.com, mailto:agg@reports.example.net"></textarea>
+            <div class="hint">Comma, semicolon, or newline separated. Prefer mailto: for widest interoperability.</div>
+          </div>
+
+          <div class="field full">
+            <label for="ruf"><span class="label-row">ruf (failure report URIs) <span class="tip" title="Comma-separated URI list for per-message failure reports. Many receivers do not send these due to privacy concerns.">?</span></span></label>
+            <textarea id="ruf" placeholder="mailto:forensic@example.com"></textarea>
+          </div>
+
+          <div class="field full">
+            <label><span class="label-row">fo (failure options) <span class="tip" title="Values: 0,1,d,s. 0 and 1 are mutually exclusive. fo is ignored unless ruf is present.">?</span></span></label>
+            <div class="checks">
+              <label><input type="checkbox" name="fo" value="0" />0</label>
+              <label><input type="checkbox" name="fo" value="1" />1</label>
+              <label><input type="checkbox" name="fo" value="d" />d</label>
+              <label><input type="checkbox" name="fo" value="s" />s</label>
+            </div>
+            <div class="hint">If multiple selected, they are emitted as colon-separated list (example: 1:d:s).</div>
+          </div>
+
+          <div class="field hidden legacy-only">
+            <label for="pct"><span class="label-row">pct (legacy) <span class="tip" title="Historic in RFC 9989. RFC 7489 sampling percentage.">?</span></span></label>
+            <input id="pct" type="number" min="0" max="100" step="1" placeholder="100" />
+          </div>
+
+          <div class="field hidden legacy-only">
+            <label for="ri"><span class="label-row">ri (legacy) <span class="tip" title="Historic in RFC 9989. RFC 7489 aggregate reporting interval in seconds.">?</span></span></label>
+            <input id="ri" type="number" min="1" step="1" placeholder="86400" />
+          </div>
+
+          <div class="field hidden legacy-only">
+            <label for="rf"><span class="label-row">rf (legacy) <span class="tip" title="Historic in RFC 9989. RFC 7489 failure report format. afrf is widely used.">?</span></span></label>
+            <select id="rf">
+              <option value="">not set</option>
+              <option value="afrf">afrf</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="presetMonitor" class="alt" type="button">Preset: Monitor</button>
+          <button id="presetEnforce" class="warn" type="button">Preset: Enforce</button>
+          <button id="reset" type="button">Reset</button>
+        </div>
+
+        <div class="wizard">
+          <h2 style="margin:0;">Guided Rollout Wizard</h2>
+          <p class="muted" style="margin-bottom:0.2rem;">Use staged rollout steps with checkpoints before progressing.</p>
+          <div class="wizard-stage">
+            <button id="stageMonitor" type="button" class="active">Stage 1: none</button>
+            <button id="stageQuarantine" type="button">Stage 2: quarantine</button>
+            <button id="stageReject" type="button">Stage 3: reject</button>
+          </div>
+          <div class="wizard-box">
+            <h3 id="wizardTitle">Stage 1 - Monitoring</h3>
+            <p id="wizardSummary" class="muted" style="margin-top:0;">Collect telemetry before enforcement.</p>
+            <ul id="checkpointList" class="checkpoint-list"></ul>
+            <div class="row" style="margin-top:0.45rem;">
+              <button id="applyStage" type="button">Apply Stage Settings</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Generated DNS Output</h2>
+        <div id="statusChip" class="chip bad">Needs fixes</div>
+
+        <div class="split">
+          <div>
+            <p class="muted">Host</p>
+            <pre id="hostOut" class="out">_dmarc.example.com</pre>
+          </div>
+          <div>
+            <p class="muted">TXT value</p>
+            <pre id="txtOut" class="out">v=DMARC1; p=none</pre>
+          </div>
+        </div>
+
+        <p class="muted" style="margin-top:0.8rem;">Zone file style line</p>
+        <pre id="zoneOut" class="out">_dmarc.example.com IN TXT "v=DMARC1; p=none"</pre>
+
+        <div class="row">
+          <button id="copyHost" type="button">Copy Host</button>
+          <button id="copyTxt" type="button">Copy TXT</button>
+          <button id="copyZone" class="alt" type="button">Copy Zone Line</button>
+        </div>
+
+        <h2 style="margin-top:1rem;">Checks</h2>
+        <ul id="issues" class="issues"></ul>
+
+        <h2 style="margin-top:1rem;">External Report Authorization</h2>
+        <p class="muted">If rua/ruf target external domains, publish these DNS records (RFC 9990 / RFC 9991):</p>
+        <pre id="authOut" class="out">No external authorization records required.</pre>
+      </section>
+    </div>
+
+    <section class="panel" style="margin-top:1rem;">
+      <h2>Parse Existing Record</h2>
+      <p class="muted">Paste a DMARC record to load values into the builder. Legacy pct/ri/rf are parsed and flagged as historic.</p>
+      <textarea id="parseInput" placeholder="v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"></textarea>
+      <div class="row">
+        <button id="parseBtn" type="button">Parse Into Form</button>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:1rem;">
+      <h2>Guided Path (RFC 9989/9990/9991)</h2>
+      <p class="muted">Follow these steps to move from monitoring to enforcement with reporting safety checks.</p>
+      <ol id="pathList" class="path-list"></ol>
+    </section>
+
+    <p class="foot">Note: DMARCbis drafts evolve. This builder follows broadly accepted current syntax, includes np, and highlights operational cautions. Validate final policy against your mail flow before moving to reject.</p>
+  </div>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const formIds = ["domain", "p", "sp", "np", "t", "psd", "pct", "ri", "rf", "adkim", "aspf", "rua", "ruf"];
+    const fields = Object.fromEntries(formIds.map((id) => [id, el(id)]));
+
+    const issuesEl = el("issues");
+    const hostOut = el("hostOut");
+    const txtOut = el("txtOut");
+    const zoneOut = el("zoneOut");
+    const authOut = el("authOut");
+    const statusChip = el("statusChip");
+    const checkpointList = el("checkpointList");
+    const wizardTitle = el("wizardTitle");
+    const wizardSummary = el("wizardSummary");
+    const pathList = el("pathList");
+    const modeSummary = el("modeSummary");
+    const compatToggle = el("compat7489");
+
+    const fqdnRegex = /^(?=.{1,253}$)(?!-)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
+    let activeStage = "monitor";
+    let legacyParseWarnings = [];
+
+    function parseUriList(text) {
+      return text
+        .split(/[\n,;]+/)
+        .map((x) => x.trim())
+        .filter(Boolean);
+    }
+
+    function validateUri(u) {
+      if (!/^[a-z][a-z0-9+.-]*:/i.test(u)) return false;
+      const withoutObs = u.replace(/![0-9]+[kmgt]?$/i, "");
+      return !/[\s]/.test(withoutObs);
+    }
+
+    function isMailtoUri(u) {
+      if (!u.toLowerCase().startsWith("mailto:")) return false;
+      const rest = u.slice(7).replace(/![0-9]+[kmgt]?$/i, "");
+      const [address] = rest.split("?");
+      return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(address);
+    }
+
+    function getFo() {
+      return Array.from(document.querySelectorAll('input[name="fo"]:checked')).map((x) => x.value);
+    }
+
+    function isCompatMode() {
+      return compatToggle.checked;
+    }
+
+    function setCompatUi() {
+      const compat = isCompatMode();
+      document.querySelectorAll(".legacy-only").forEach((node) => {
+        node.classList.toggle("hidden", !compat);
+      });
+      modeSummary.textContent = compat
+        ? "Compatibility mode: emits legacy RFC 7489 tags when provided (pct, ri, rf)."
+        : "Standards mode: emits RFC 9989 active tags (t, psd, np) with RFC 9990/9991 report guidance.";
+    }
+
+    function buildAuthRecords(policyDomain, rua, ruf) {
+      const lines = [];
+      const seen = new Set();
+      const allUris = rua.concat(ruf);
+      allUris.forEach((u) => {
+        if (!isMailtoUri(u)) return;
+        const mail = u.slice(7).replace(/![0-9]+[kmgt]?$/i, "").split("?")[0];
+        const destDomain = (mail.split("@")[1] || "").toLowerCase();
+        if (!policyDomain || !destDomain) return;
+        if (destDomain.endsWith(policyDomain)) return;
+        const key = `${policyDomain}|${destDomain}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        lines.push(`${policyDomain}._report._dmarc.${destDomain} IN TXT "v=DMARC1;"`);
+      });
+      authOut.textContent = lines.length ? lines.join("\n") : "No external authorization records required.";
+    }
+
+    function renderGuidedPath() {
+      const compat = isCompatMode();
+      const domain = fields.domain.value.trim().toLowerCase();
+      const p = fields.p.value;
+      const rua = parseUriList(fields.rua.value);
+      const ruf = parseUriList(fields.ruf.value);
+      const hasDomain = Boolean(domain && fqdnRegex.test(domain));
+      const hasRuaMailto = rua.some((u) => isMailtoUri(u));
+      const hasEnforcement = p === "quarantine" || p === "reject";
+      const hasStrict = fields.adkim.value === "s" && fields.aspf.value === "s";
+
+      const steps = [
+        { ok: hasDomain, text: "Publish DMARC at _dmarc.<author-domain> and organizational domain where needed (RFC 9989 Section 5.1.4)." },
+        { ok: hasRuaMailto, text: "Set rua with valid mailto URI(s) and collect aggregate reports (RFC 9990)." },
+        { ok: p === "none", text: "Begin monitoring mode and remediate unaligned streams before enforcement (RFC 9989 Section 5.1.5/5.1.6)." },
+        { ok: hasEnforcement, text: "Transition to quarantine or reject only after report evidence and remediation (RFC 9989 Section 5.1.7)." },
+        { ok: !ruf.length || ruf.every((u) => isMailtoUri(u)), text: "If using ruf, validate privacy and receiver support expectations (RFC 9991 and RFC 9989 privacy sections)." },
+        { ok: compat || hasStrict, text: compat ? "Compatibility mode is active for RFC 7489 style generation." : "Consider strict alignment for high-assurance domains (RFC 9989 security considerations)." }
+      ];
+
+      pathList.innerHTML = "";
+      steps.forEach((step) => {
+        const li = document.createElement("li");
+        li.className = step.ok ? "done" : "next";
+        li.textContent = (step.ok ? "DONE: " : "NEXT: ") + step.text;
+        pathList.appendChild(li);
+      });
+    }
+
+    function buildRecord() {
+      const issues = [];
+      const warnings = [];
+
+      const domain = fields.domain.value.trim().toLowerCase();
+      const p = fields.p.value;
+      const sp = fields.sp.value;
+      const np = fields.np.value;
+      const t = fields.t.value;
+      const psd = fields.psd.value;
+      const pctRaw = fields.pct.value.trim();
+      const riRaw = fields.ri.value.trim();
+      const rf = fields.rf.value;
+      const adkim = fields.adkim.value;
+      const aspf = fields.aspf.value;
+      const rua = parseUriList(fields.rua.value);
+      const ruf = parseUriList(fields.ruf.value);
+      const fo = getFo();
+      const compat = isCompatMode();
+
+      if (!domain) {
+        issues.push("Domain is required.");
+      } else if (!fqdnRegex.test(domain)) {
+        issues.push("Domain format appears invalid.");
+      }
+
+      const tags = ["v=DMARC1", `p=${p}`];
+
+      if (sp) tags.push(`sp=${sp}`);
+      if (compat) {
+        if (np) warnings.push("np is not part of RFC 7489 and was not emitted in compatibility mode.");
+        if (t) warnings.push("t is not part of RFC 7489 and was not emitted in compatibility mode.");
+        if (psd) warnings.push("psd is not part of RFC 7489 and was not emitted in compatibility mode.");
+      } else {
+        if (np) tags.push(`np=${np}`);
+        if (t) tags.push(`t=${t}`);
+        if (psd) tags.push(`psd=${psd}`);
+      }
+
+      if (adkim) tags.push(`adkim=${adkim}`);
+      if (aspf) tags.push(`aspf=${aspf}`);
+
+      if (compat) {
+        if (pctRaw) {
+          const pct = Number(pctRaw);
+          if (!Number.isInteger(pct) || pct < 0 || pct > 100) {
+            issues.push("pct must be an integer from 0 to 100 in compatibility mode.");
+          } else {
+            tags.push(`pct=${pct}`);
+          }
+        }
+        if (riRaw) {
+          const ri = Number(riRaw);
+          if (!Number.isInteger(ri) || ri < 1) {
+            issues.push("ri must be a positive integer in compatibility mode.");
+          } else {
+            tags.push(`ri=${ri}`);
+          }
+        }
+        if (rf) {
+          tags.push(`rf=${rf}`);
+        }
+      } else if (pctRaw || riRaw || rf) {
+        warnings.push("pct, ri, and rf are historic in RFC 9989 and were not emitted.");
+      }
+
+      if (rua.length) {
+        const bad = rua.filter((x) => !validateUri(x));
+        if (bad.length) {
+          issues.push(`Invalid rua URI(s): ${bad.join(", ")}`);
+        } else {
+          tags.push(`rua=${rua.join(",")}`);
+          const nonMailto = rua.filter((u) => !isMailtoUri(u));
+          if (nonMailto.length) {
+            warnings.push("rua includes non-mailto URI(s). Some receivers may ignore unsupported schemes.");
+          }
+          const external = rua.some((u) => {
+            if (!isMailtoUri(u)) return false;
+            const mail = u.slice(7).replace(/![0-9]+[kmgt]?$/i, "").split("?")[0];
+            const addrDomain = mail.split("@")[1]?.toLowerCase() || "";
+            return domain && addrDomain && !addrDomain.endsWith(domain);
+          });
+          if (external) {
+            warnings.push("External rua destination detected. Ensure report receiver authorization DNS records are in place.");
+          }
+        }
+      }
+
+      if (ruf.length) {
+        const bad = ruf.filter((x) => !validateUri(x));
+        if (bad.length) {
+          issues.push(`Invalid ruf URI(s): ${bad.join(", ")}`);
+        } else {
+          tags.push(`ruf=${ruf.join(",")}`);
+          const nonMailto = ruf.filter((u) => !isMailtoUri(u));
+          if (nonMailto.length) {
+            warnings.push("ruf includes non-mailto URI(s). They are valid syntax but often unsupported.");
+          }
+          warnings.push("ruf can contain sensitive failure samples. Ensure legal/privacy review.");
+        }
+      }
+
+      if (fo.length) {
+        const has0 = fo.includes("0");
+        const has1 = fo.includes("1");
+        if (has0 && has1) {
+          issues.push("fo cannot include both 0 and 1 (mutually exclusive).");
+        } else if (!ruf.length) {
+          warnings.push("fo is ignored unless ruf is present, so fo was not emitted.");
+        } else {
+          tags.push(`fo=${fo.join(":")}`);
+        }
+      }
+
+      if (!rua.length && !ruf.length) {
+        warnings.push("No rua/ruf destination set. You will have no report telemetry.");
+      }
+
+      if (p === "none") {
+        warnings.push("p=none is monitoring only. Move to quarantine/reject after validation.");
+      }
+
+      if (legacyParseWarnings.length) {
+        warnings.push(...legacyParseWarnings);
+      }
+
+      if (psd === "y" && ruf.length) {
+        warnings.push("For multi-org PSD deployments, RFC 9989 says ruf MUST NOT be included.");
+      }
+
+      if (t === "y" && (p === "quarantine" || p === "reject")) {
+        warnings.push("t=y is testing mode: receivers may apply one level less strict than published enforcement policy.");
+      }
+
+      const txt = tags.join("; ");
+      const host = domain ? `_dmarc.${domain}` : "_dmarc.<domain>";
+      const zoneLine = `${host} IN TXT "${txt.replace(/"/g, "")}"`;
+
+      hostOut.textContent = host;
+      txtOut.textContent = txt;
+      zoneOut.textContent = zoneLine;
+      buildAuthRecords(domain, rua, ruf);
+
+      renderIssues(issues, warnings);
+      renderWizard();
+      renderGuidedPath();
+    }
+
+    function renderIssues(errors, warnings) {
+      issuesEl.innerHTML = "";
+
+      if (!errors.length && !warnings.length) {
+        const li = document.createElement("li");
+        li.className = "ok";
+        li.textContent = "Looks good. Record is syntactically valid for common DMARCbis-oriented usage.";
+        issuesEl.appendChild(li);
+      } else {
+        errors.forEach((msg) => {
+          const li = document.createElement("li");
+          li.className = "err";
+          li.textContent = msg;
+          issuesEl.appendChild(li);
+        });
+
+        warnings.forEach((msg) => {
+          const li = document.createElement("li");
+          li.className = "warn";
+          li.textContent = msg;
+          issuesEl.appendChild(li);
+        });
+      }
+
+      if (errors.length) {
+        statusChip.textContent = "Needs fixes";
+        statusChip.className = "chip bad";
+      } else {
+        statusChip.textContent = "Syntax OK";
+        statusChip.className = "chip good";
+      }
+    }
+
+    function copyText(text) {
+      navigator.clipboard.writeText(text).catch(() => {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      });
+    }
+
+    function resetForm() {
+      fields.domain.value = "";
+      fields.p.value = "none";
+      fields.sp.value = "";
+      fields.np.value = "";
+      fields.t.value = "";
+      fields.psd.value = "";
+      fields.pct.value = "";
+      fields.ri.value = "";
+      fields.rf.value = "";
+      fields.adkim.value = "";
+      fields.aspf.value = "";
+      fields.rua.value = "";
+      fields.ruf.value = "";
+      document.querySelectorAll('input[name="fo"]').forEach((x) => { x.checked = false; });
+      buildRecord();
+    }
+
+    function setPresetMonitor() {
+      fields.p.value = "none";
+      fields.sp.value = "";
+      fields.np.value = "";
+      fields.t.value = "";
+      fields.psd.value = "";
+      fields.pct.value = "";
+      fields.ri.value = "";
+      fields.rf.value = "";
+      fields.adkim.value = "r";
+      fields.aspf.value = "r";
+      if (!fields.rua.value.trim()) fields.rua.value = "mailto:dmarc@" + (fields.domain.value.trim() || "example.com");
+      buildRecord();
+    }
+
+    function setPresetEnforce() {
+      fields.p.value = "reject";
+      fields.sp.value = "reject";
+      fields.np.value = "reject";
+      fields.t.value = "n";
+      fields.psd.value = "";
+      fields.pct.value = "";
+      fields.ri.value = "";
+      fields.rf.value = "";
+      fields.adkim.value = "s";
+      fields.aspf.value = "s";
+      if (!fields.rua.value.trim()) fields.rua.value = "mailto:dmarc@" + (fields.domain.value.trim() || "example.com");
+      buildRecord();
+    }
+
+    function getCheckpoints(stage) {
+      const checkpoints = [];
+      const domain = fields.domain.value.trim().toLowerCase();
+      const hasDomain = Boolean(domain && fqdnRegex.test(domain));
+      const rua = parseUriList(fields.rua.value);
+      const hasRua = rua.length > 0;
+      const validRua = hasRua && rua.every((x) => validateUri(x));
+      const p = fields.p.value;
+      const sp = fields.sp.value;
+      const np = fields.np.value;
+      const t = fields.t.value || "n";
+      const strictAlign = fields.adkim.value === "s" && fields.aspf.value === "s";
+
+      checkpoints.push({
+        ok: hasDomain,
+        text: "Domain is set and valid"
+      });
+      checkpoints.push({
+        ok: validRua,
+        text: "rua uses valid mailto destinations"
+      });
+
+      if (stage === "monitor") {
+        checkpoints.push({ ok: p === "none", text: "Policy is set to p=none" });
+        checkpoints.push({ ok: t === "n" || t === "y", text: "Testing state is explicit (t=n or t=y/default)" });
+      }
+
+      if (stage === "quarantine") {
+        checkpoints.push({ ok: p === "quarantine", text: "Policy is p=quarantine" });
+        checkpoints.push({ ok: (sp || p) !== "none", text: "Subdomain policy is not left at none" });
+        checkpoints.push({ ok: t === "y" || t === "n", text: "Use t=y while evaluating side effects, then t=n" });
+      }
+
+      if (stage === "reject") {
+        checkpoints.push({ ok: p === "reject", text: "Policy is p=reject" });
+        checkpoints.push({ ok: (sp || p) === "reject", text: "Subdomain policy is reject" });
+        checkpoints.push({ ok: np === "reject", text: "np is reject for non-existent subdomains" });
+        checkpoints.push({ ok: t === "n", text: "t is n (not test mode) before full reject enforcement" });
+        checkpoints.push({ ok: strictAlign, text: "Strict alignment (adkim=s, aspf=s) is enabled" });
+      }
+
+      return checkpoints;
+    }
+
+    function renderWizard() {
+      const map = {
+        monitor: {
+          title: "Stage 1 - Monitoring",
+          summary: "Start at p=none and collect aggregate reports until aligned senders are known."
+        },
+        quarantine: {
+          title: "Stage 2 - Quarantine",
+          summary: "Move to p=quarantine as failures become understood and low-risk."
+        },
+        reject: {
+          title: "Stage 3 - Reject",
+          summary: "Use p=reject only after sustained low false-positive rates."
+        }
+      };
+
+      wizardTitle.textContent = map[activeStage].title;
+      wizardSummary.textContent = map[activeStage].summary;
+
+      checkpointList.innerHTML = "";
+      const checkpoints = getCheckpoints(activeStage);
+      checkpoints.forEach((cp) => {
+        const li = document.createElement("li");
+        li.className = cp.ok ? "pass" : "todo";
+        li.textContent = (cp.ok ? "PASS: " : "CHECK: ") + cp.text;
+        checkpointList.appendChild(li);
+      });
+
+      el("stageMonitor").classList.toggle("active", activeStage === "monitor");
+      el("stageQuarantine").classList.toggle("active", activeStage === "quarantine");
+      el("stageReject").classList.toggle("active", activeStage === "reject");
+    }
+
+    function applyStage() {
+      if (activeStage === "monitor") {
+        fields.p.value = "none";
+        fields.sp.value = "";
+        fields.np.value = "";
+        fields.t.value = "";
+        fields.pct.value = "100";
+        fields.ri.value = "86400";
+        fields.rf.value = "afrf";
+        fields.adkim.value = "r";
+        fields.aspf.value = "r";
+      }
+
+      if (activeStage === "quarantine") {
+        fields.p.value = "quarantine";
+        fields.sp.value = "quarantine";
+        if (!fields.np.value) fields.np.value = "quarantine";
+        fields.t.value = "y";
+        if (!fields.pct.value) fields.pct.value = "50";
+      }
+
+      if (activeStage === "reject") {
+        fields.p.value = "reject";
+        fields.sp.value = "reject";
+        fields.np.value = "reject";
+        fields.t.value = "n";
+        fields.pct.value = "100";
+        fields.adkim.value = "s";
+        fields.aspf.value = "s";
+      }
+
+      if (!fields.rua.value.trim()) fields.rua.value = "mailto:dmarc@" + (fields.domain.value.trim() || "example.com");
+      buildRecord();
+    }
+
+    function parseExisting() {
+      const raw = el("parseInput").value.trim();
+      if (!raw) return;
+      legacyParseWarnings = [];
+
+      const pieces = raw.split(";").map((x) => x.trim()).filter(Boolean);
+      const tags = {};
+
+      pieces.forEach((piece) => {
+        const idx = piece.indexOf("=");
+        if (idx > 0) {
+          const k = piece.slice(0, idx).trim().toLowerCase();
+          const v = piece.slice(idx + 1).trim();
+          tags[k] = v;
+        }
+      });
+
+      if (tags.p) fields.p.value = tags.p;
+      if (tags.sp) fields.sp.value = tags.sp;
+      if (tags.np) fields.np.value = tags.np;
+      if (tags.t) fields.t.value = tags.t;
+      if (tags.psd) fields.psd.value = tags.psd;
+      if (tags.pct) fields.pct.value = tags.pct;
+      if (tags.ri) fields.ri.value = tags.ri;
+      if (tags.rf) fields.rf.value = tags.rf;
+      if (tags.adkim) fields.adkim.value = tags.adkim;
+      if (tags.aspf) fields.aspf.value = tags.aspf;
+      if (tags.rua) fields.rua.value = tags.rua.replace(/,/g, ", ");
+      if (tags.ruf) fields.ruf.value = tags.ruf.replace(/,/g, ", ");
+
+      document.querySelectorAll('input[name="fo"]').forEach((box) => {
+        box.checked = false;
+      });
+      if (tags.fo) {
+        tags.fo.split(":").forEach((val) => {
+          const cb = document.querySelector(`input[name="fo"][value="${val}"]`);
+          if (cb) cb.checked = true;
+        });
+      }
+
+      if (tags.pct || tags.ri || tags.rf) {
+        compatToggle.checked = true;
+        setCompatUi();
+        const legacy = [];
+        if (tags.pct) legacy.push("pct");
+        if (tags.ri) legacy.push("ri");
+        if (tags.rf) legacy.push("rf");
+        legacyParseWarnings = [
+          `Parsed legacy tag(s): ${legacy.join(", ")}. In standards mode these are historic and omitted; in compatibility mode they are emitted.`
+        ];
+      }
+
+      buildRecord();
+    }
+
+    formIds.forEach((id) => fields[id].addEventListener("input", buildRecord));
+    document.querySelectorAll('input[name="fo"]').forEach((x) => x.addEventListener("change", buildRecord));
+
+    el("copyHost").addEventListener("click", () => copyText(hostOut.textContent));
+    el("copyTxt").addEventListener("click", () => copyText(txtOut.textContent));
+    el("copyZone").addEventListener("click", () => copyText(zoneOut.textContent));
+
+    el("reset").addEventListener("click", resetForm);
+    el("presetMonitor").addEventListener("click", setPresetMonitor);
+    el("presetEnforce").addEventListener("click", setPresetEnforce);
+    el("parseBtn").addEventListener("click", parseExisting);
+    compatToggle.addEventListener("change", () => {
+      setCompatUi();
+      buildRecord();
+    });
+    el("stageMonitor").addEventListener("click", () => { activeStage = "monitor"; renderWizard(); });
+    el("stageQuarantine").addEventListener("click", () => { activeStage = "quarantine"; renderWizard(); });
+    el("stageReject").addEventListener("click", () => { activeStage = "reject"; renderWizard(); });
+    el("applyStage").addEventListener("click", applyStage);
+
+    setCompatUi();
+    buildRecord();
+  </script>
+</body>
+</html>
